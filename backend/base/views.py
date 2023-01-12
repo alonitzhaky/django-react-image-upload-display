@@ -4,8 +4,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from .serializers import TaskSerializer
-from .models import Task
+from .serializers import ProductSerializer
+from .models import Product
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -13,20 +13,15 @@ from rest_framework import status
 
 # Present all images to client
 @api_view(['GET'])
-def getTasks(request):
-    res = [] # create an empty list
-    for img in Task.objects.all(): #run on every row in the table...
-        res.append({"title":img.title,
-                    "description":img.description,
-                    "completed":False,
-                    "image":str(img.image)}) #append row by to row to res list
+def get_product(request):
+    res = [{"title": item.title, "description": item.description, "price": item.price, "image": str(item.image)} for item in Product.objects.all()]
     return Response(res) #return array as json response
-    
+
 # upload image method (post)
 class ImageUpload(APIView):
     parser_class=(MultiPartParser,FormParser)
     def post(self,request,*args,**kwargs):
-        api_serializer=TaskSerializer(data=request.data, context = {'user': request.user})
+        api_serializer=ProductSerializer(data=request.data, context = {'user': request.user})
         if api_serializer.is_valid():
             api_serializer.save()
             return Response(api_serializer.data,status=status.HTTP_201_CREATED)
@@ -34,8 +29,8 @@ class ImageUpload(APIView):
             print('error',api_serializer.errors)
             return Response(api_serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self,request,*args,**kwargs):
-        pass
+    # def get(self,request,*args,**kwargs):
+    #     pass
 
 # Login
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -52,9 +47,9 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 # Register
 @api_view(['POST'])
-def register(req):
-    username=req.data["username"]
-    password=req.data["password"]
+def register(request):
+    username=request.data["username"]
+    password=request.data["password"]
     # create a new user (encrypt password)
     try:
         User.objects.create_user(username=username,password=password)
@@ -62,53 +57,49 @@ def register(req):
         return Response("error")    
     return Response(f"{username} registered")
  
-@api_view(['GET'])
-def test(req):
-    return Response("hello")
-
-# /////////// Tasks table (CRUD)
+# /////////// product table (CRUD)
 @api_view(['GET','POST','DELETE','PUT','PATCH'])
 @permission_classes([IsAuthenticated])
-def tasks(req,id=-1):
-    if req.method =='GET':
-        user= req.user
+def product(request,id=-1):
+    if request.method =='GET':
+        user= request.user
         if id > -1:
             try:
-                temp_task=user.task_set.get(id=id)
-                return Response (TaskSerializer(temp_task,many=False).data)
-            except Task.DoesNotExist:
+                temp_product=user.product_set.all()
+                return Response (ProductSerializer(temp_product,many=False).data)
+            except Product.DoesNotExist:
                 return Response ("not found") 
         
-        all_tasks=TaskSerializer(user.task_set.all(),many=True).data
+        all_tasks=ProductSerializer(user.product_set.all(),many=True).data
         return Response ( all_tasks)
         
-    if req.method =='POST':
-        print(type( req.user))
-        Task.objects.create(title =req.data["title"],description=req.data["description"],completed= req.data["completed"],user=req.user)
+    if request.method =='POST':
+        print(type( request.user))
+        product.objects.create(title =request.data["title"], description=request.data["description"], completed= request.data["price"], user=request.user)
         return Response ("post...")
 
-    if req.method =='DELETE':
-        user= req.user
+    if request.method =='DELETE':
+        user= request.user
         try:
-            temp_task=user.task_set.get(id=id)
-        except Task.DoesNotExist:
+            temp_product=user.product_set.get(id=id)
+        except Product.DoesNotExist:
             return Response ("not found")    
         
-        temp_task.delete()
+        temp_product.delete()
         return Response ("del...")
-    if req.method =='PUT':
-        user= req.user
+    if request.method =='PUT':
+        user= request.user
         try:
-            temp_task=user.task_set.get(id=id)
-        except Task.DoesNotExist:
+            temp_product=user.product_set.get(id=id)
+        except Product.DoesNotExist:
             return Response ("not found")
         
-        old_task = user.task_set.get(id=id)
-        old_task.title =req.data["title"]
-        old_task.completed =req.data["completed"]
-        old_task.description=req.data["description"]
-        old_task.save()
-        return Response("res")
+        old_product = user.task_set.get(id=id)
+        old_product.title =request.data["title"]
+        old_product.completed =request.data["price"]
+        old_product.description=request.data["description"]
+        old_product.save()
+        return Response("The update was successfuly")
 
 # API View
 @permission_classes([IsAuthenticated])
@@ -120,8 +111,8 @@ class MyModelView(APIView):
         """
         Handle GET requests to return a list of MyModel objects
         """
-        my_model = Task.objects.all()
-        serializer = TaskSerializer(my_model, many=True)
+        my_product = Product.objects.all()
+        serializer = ProductSerializer(my_product, many=True)
         return Response(serializer.data)
 
     def post(self, request):
@@ -130,7 +121,7 @@ class MyModelView(APIView):
         """
         # usr =request.user
         # print(usr)
-        serializer = TaskSerializer(data=request.data, context={'user': request.user})
+        serializer = ProductSerializer(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -140,8 +131,8 @@ class MyModelView(APIView):
         """
         Handle PUT requests to update an existing Task object
         """
-        my_model = Task.objects.get(pk=pk)
-        serializer = TaskSerializer(my_model, data=request.data)
+        my_product = Product.objects.get(pk=pk)
+        serializer = ProductSerializer(my_product, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -151,6 +142,6 @@ class MyModelView(APIView):
         """
         Handle DELETE requests to delete a Task object
         """
-        my_model = Task.objects.get(pk=pk)
-        my_model.delete()
+        my_product = Product.objects.get(pk=pk)
+        my_product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
