@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from .models import Task
-class TaskSerializer(serializers.ModelSerializer):
+from .models import Product
+class ProductSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Task
+        model = Product
         fields = '__all__'
         
     def create(self, validated_data):
         user = self.context['user']
-        return Task.objects.create(**validated_data, user = user) 
+        return Product.objects.create(**validated_data, user = user) 
 
