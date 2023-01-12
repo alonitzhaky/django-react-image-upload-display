@@ -1,27 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-function ImageUpload() {
+const ImageUpload = () => {
   const [image, setImage] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
-  const [uploadedImages, setUploadedImages] = useState([]);
-  const MYSERVER ="http://127.0.0.1:8000/"
-
+  const [imageUrl, setImageUrl] = useState('');
+    const MYSERVER ="http://127.0.0.1:8000/upload_image/"
   const handleImageChange = (e) => {
-    e.preventDefault();
+    setImage(e.target.files[0]);
+  };
 
-    let reader = new FileReader();
-    let file = e.target.files[0];
-
-    reader.onloadend = () => {
-      setImage(file);
-      setImagePreviewUrl(reader.result);
-    }
-
-    reader.readAsDataURL(file);
-  }
-
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
@@ -30,36 +18,28 @@ function ImageUpload() {
     formData.append('description', "baga");
     formData.append('completed', true);
 
-
-    axios.post(MYSERVER + 'upload_image/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    .then((response) => {
-      setUploadedImages([...uploadedImages, response.data.imageUrl]);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-  }
+    try {
+      const res = await axios.post(MYSERVER, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setImageUrl(res.data.imageUrl);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div>
-      <form>
+      <form onSubmit={handleImageUpload}>
         <input type="file" onChange={handleImageChange} />
-        <button onClick={handleImageUpload}>Upload</button>
+        <button type="submit">Upload Image</button>
       </form>
-      <div>
-        <h2>Gallery</h2>
-        {uploadedImages.map((imageUrl, index) => (
-          <div key={index}>
-            <img src={`http://127.0.0.1:8000/get_images/${imageUrl.image}`} alt="a"></img>
-          </div>
-        ))}
-      </div>
+      
+      {imageUrl && <img src={imageUrl} alt="Uploaded Image" />}
     </div>
   );
-}
+};
 
 export default ImageUpload;

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import tasks 
+from .views import tasks
 from . import views 
 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -11,7 +11,5 @@ urlpatterns = [
     path('tasks/<int:id>',tasks),
     path('test/',views.test ),
     path('get_all_images', views.getTasks),
-    path('upload_image/',views.ImageUpload.as_view()),
-    path('get_images/', views.getImages)
-    
+    path('upload_image/',views.ImageUpload.as_view()), 
 ]

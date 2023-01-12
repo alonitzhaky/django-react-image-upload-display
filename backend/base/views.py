@@ -10,7 +10,6 @@ from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from django.http import JsonResponse
 
 # Present all images to client
 @api_view(['GET'])
@@ -23,24 +22,12 @@ def getTasks(request):
                     "image":str(img.image)
                 }) #append row by to row to res list
     return Response(res) #return array as json response
-
-
-@api_view(['GET'])
-def getImages(request): 
-    res = []
-    for img in Task.objects.all():
-        res.append({"title":img.title,
-                    "description":img.description,
-                    "completed":False,
-                    "image":str(img.image)
-                }) #append row by to row to res list
-    return JsonResponse(res, safe = False)
     
 # upload image method (post)
 class ImageUpload(APIView):
     parser_class=(MultiPartParser,FormParser)
     def post(self,request,*args,**kwargs):
-        api_serializer=TaskSerializer(data=request.data)
+        api_serializer=TaskSerializer(data=request.data, user = request.user)
         if api_serializer.is_valid():
             api_serializer.save()
             return Response(api_serializer.data,status=status.HTTP_201_CREATED)
@@ -66,7 +53,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 # Register
 @api_view(['POST'])
-def  register(req):
+def register(req):
     username=req.data["username"]
     password=req.data["password"]
     # create a new user (encrypt password)
