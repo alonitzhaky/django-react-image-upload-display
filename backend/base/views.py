@@ -10,25 +10,23 @@ from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from django.http import JsonResponse
 
 # Present all images to client
 @api_view(['GET'])
 def getTasks(request):
-    res = [] #create an empty list
+    res = [] # create an empty list
     for img in Task.objects.all(): #run on every row in the table...
         res.append({"title":img.title,
                     "description":img.description,
                     "completed":False,
-                    "image":str(img.image)
-                }) #append row by to row to res list
+                    "image":str(img.image)}) #append row by to row to res list
     return Response(res) #return array as json response
     
 # upload image method (post)
 class ImageUpload(APIView):
     parser_class=(MultiPartParser,FormParser)
     def post(self,request,*args,**kwargs):
-        api_serializer=TaskSerializer(data=request.data)
+        api_serializer=TaskSerializer(data=request.data, context = {'user': request.user})
         if api_serializer.is_valid():
             api_serializer.save()
             return Response(api_serializer.data,status=status.HTTP_201_CREATED)
@@ -54,7 +52,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
 
 # Register
 @api_view(['POST'])
-def  register(req):
+def register(req):
     username=req.data["username"]
     password=req.data["password"]
     # create a new user (encrypt password)
@@ -111,3 +109,48 @@ def tasks(req,id=-1):
         old_task.description=req.data["description"]
         old_task.save()
         return Response("res")
+
+# API View
+@permission_classes([IsAuthenticated])
+class MyModelView(APIView):
+    """
+    This class handle the CRUD operations for MyModel
+    """
+    def get(self, request):
+        """
+        Handle GET requests to return a list of MyModel objects
+        """
+        my_model = Task.objects.all()
+        serializer = TaskSerializer(my_model, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """
+        Handle POST requests to create a new Task object
+        """
+        # usr =request.user
+        # print(usr)
+        serializer = TaskSerializer(data=request.data, context={'user': request.user})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self, request, pk):
+        """
+        Handle PUT requests to update an existing Task object
+        """
+        my_model = Task.objects.get(pk=pk)
+        serializer = TaskSerializer(my_model, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        """
+        Handle DELETE requests to delete a Task object
+        """
+        my_model = Task.objects.get(pk=pk)
+        my_model.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-function Logger() {
+const Logger = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const MYSERVER_FOR_SHOW  ="http://127.0.0.1:8000/login/"
+  const loginServer  ="http://127.0.0.1:8000/login/"
   function handleSubmit(event) {
     event.preventDefault();
 
-    axios.post(MYSERVER_FOR_SHOW, {
+    axios.post(loginServer, {
       username: username,
       password: password
     })
     .then(response => {
-        console.log(response.data.id)
+      console.log(response.data)
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       setError(null);
